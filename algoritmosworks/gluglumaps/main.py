@@ -1,38 +1,35 @@
-# main.py
 from grafo import Grafo
-from rutas import ruta_calculo
-from busquedita import busqueda_binaria
+from rutas import generar_clientes, calcular_distancias
 
 def main():
-    print("""   ____Calculeo de rutas en colombia____
-          _____________________________________________           
-          """)
+    print("Optimización de rutas de entrega (versión simplificada) ")
 
-    origen = input("Ingrese el Origen: ")
-    parada = input("Ingrese la Parada: ")
-    destino = input("Ingrese el Destino: ")
+    
+    grafo = Grafo()
 
-    resultado = ruta_calculo(origen, parada, destino)
+    
+    grafo.agregar("Almacén", lon=-74.05, lat=4.65, demanda=0)
 
-    if resultado:
-        distancia_total, tiempo_total = resultado
-        horas = int(tiempo_total // 3600)
-        minutos = int((tiempo_total % 3600) // 60)
+    clientes = generar_clientes(num_clientes=10)
+    for c in clientes:
+        grafo.agregar(c["nombre"], lon=c["lon"], lat=c["lat"], demanda=c["demanda"])
 
-        grafo_ruta = Grafo()
-        grafo_ruta.agregar(origen, parada if parada else destino)
-        grafo_ruta.agregar(parada if parada else origen, destino)
-        grafo_ruta.mostrar()
+    
+    distancias = calcular_distancias([{"nombre": "Almacén", "lon": -74.05, "lat": 4.65}] + clientes)
+    for o in distancias:
+        for d in distancias[o]:
+            grafo.conectar(o, d, distancias[o][d])
 
-        lugares = sorted([l for l in [origen, parada, destino] if l])
-        encontrado = busqueda_binaria(lugares, origen)
+    
+    grafo.mostrar()
 
-        print(f"Ruta: {', '.join(lugares)}")
-        print(f"Distancia total: {distancia_total:.2f} km")
-        print(f"Tiempo estimado de viaje: {horas} h y {minutos} min")
-        print(f"¿El origen está en la lista? {'Sí' if encontrado else 'No'}")
-    else:
-        print("No fue posible calcular la ruta. Verifique los nombres ingresados.")
+    
+    capacidad = 20
+    rutas = grafo.asignar_vehiculos(capacidad)
+
+    print("\nAsignación de vehículos:")
+    for i, ruta in enumerate(rutas):
+        print(f"Vehículo {i+1}: Almacén → {' → '.join(ruta)} → Almacén")
 
 if __name__ == "__main__":
     main()
